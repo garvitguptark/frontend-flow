@@ -1,0 +1,30 @@
+# Dev-only preview config. Points at directories on one machine (../test-project,
+# ../roaster, scratch copies) that do not exist for anyone else, so shipping it just
+# gives every cloner a broken server entry. Phase 3.5 writes a fresh one per project.
+.claude/launch.json
+
+# Internal testing handoff. Excluded by default because it names two private projects
+# that were used read-only as scan corpora, and describes specific bugs found in them.
+# It is a working log for whoever maintains this plugin, not user documentation, so it
+# loses nothing by staying local. To publish it, delete this line and first replace the
+# project names with generic descriptions ("a private Tailwind v4 Next.js app").
+TESTING.md
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Scratch output from running the scanners locally
+*.tokens.txt
+drift-out.txt
