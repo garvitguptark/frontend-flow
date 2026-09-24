@@ -1,0 +1,80 @@
+schema_version: "1.1"
+name: rejects-buzzwords
+description: >
+  The headline case. Every ambition word in this prompt is a decoy: "scalable",
+  "enterprise-grade", "eventually". None of them is a signal. The only real trigger is the
+  live driver tracking, and the team size is one. A model without the plugin tends to match
+  the ambition and answer microservices; the table refuses. If this case does not show a
+  clear delta, the plugin is not doing the thing it exists to do.
+tags: [architecture, refusal, headline]
+runs: 3
+
+# Explicit so the without-arm definitely resolves the plugin. The docs call out a
+# silent failure where auto-detection misses it and every delta comes back zero.
+plugins: ["../.."]
+
+execution:
+  max_turns: 20
+  timeout_seconds: 420
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: |
+    I'm building a food delivery platform. Orders, restaurant listings, and live driver
+    tracking on a map for customers. It needs to be scalable and enterprise-grade
+    eventually. I'm the only developer. What architecture should I use?
+
+graders:
+  # Did the plugin fire at all? Excluded from the without-arm automatically, since the
+  # Skill tool cannot be called there.
+  - name: architecture-skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: "architecture"
+    min: 1
+
+  # The answer itself must be the cheap shape. Positive match rather than a blanket
+  # not_contains on "microservices", because a correct answer may legitimately name it
+  # in the runner-up line.
+  - name: lands-on-cheap-shape
+    type: regex
+    target: last_message
+    pattern: "Architecture:\\s*\\**\\s*(layered|monolith)"
+    flags: i
+    weight: 2
+
+  # It must not *recommend* microservices. Scoped to the Architecture line so a runner-up
+  # mention doesn't fail the case.
+  - name: does-not-recommend-microservices
+    type: regex
+    target: last_message
+    pattern: "Architecture:[^\\n]*microservice"
+    flags: i
+    match: not_contains
+    weight: 2
+
+  - name: names-its-cost-and-what-would-flip-it
+    type: llm
+    focus: last_message
+    criteria: |
+      PASS only if BOTH are true:
+
+      1. The reply states what the recommended architecture COSTS — an operational or
+         maintenance downside it is accepting. Naming benefits only is a FAIL.
+      2. The reply names a runner-up or alternative AND the specific condition that would
+         change the recommendation to it. A vague "it depends on your needs" is a FAIL;
+         it must name a checkable condition.
+
+      Ignore whether you personally agree with the architecture chosen. Judge only whether
+      the cost and the flip condition are stated.
+
+  - name: treats-buzzwords-as-non-signals
+    type: llm
+    focus: last_message
+    criteria: |
+      The prompt contained the words "scalable" and "enterprise-grade" as aspirations, and
+      stated exactly one developer.
+
+      PASS if the reply's reasoning rests on concrete stated facts — team size of one, the
+      live-tracking requirement — rather than on the ambition words.
+
+      FAIL if the reply cites "scalability", "enterprise-grade", "future growth" or similar
+      as a REASON for its choice of architecture.

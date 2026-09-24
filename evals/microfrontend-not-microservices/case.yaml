@@ -1,0 +1,60 @@
+schema_version: "1.1"
+name: microfrontend-not-microservices
+description: >
+  All the deploy pressure in this prompt is in the UI. The backend is stated as settled and
+  working, so nothing licenses touching it. The failure to catch is collapsing "two teams
+  shipping separately" into microservices and restructuring a backend nobody asked about.
+tags: [architecture, scope]
+runs: 3
+
+# Explicit so the without-arm definitely resolves the plugin. The docs call out a
+# silent failure where auto-detection misses it and every delta comes back zero.
+plugins: ["../.."]
+
+execution:
+  max_turns: 20
+  timeout_seconds: 420
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: |
+    The backend is settled — one backend team, one API, one deploy, and that's working
+    fine. The problem is the frontend. Two teams: checkout is a React app one team ships
+    weekly, catalog is an older Vue app the other team inherited and ships on its own
+    cadence. Customers should experience it as one site. What architecture fits?
+
+graders:
+  - name: architecture-skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: "architecture"
+    min: 1
+
+  - name: reaches-micro-frontend
+    type: regex
+    target: last_message
+    pattern: "micro[- ]?frontend"
+    flags: i
+    weight: 2
+
+  - name: leaves-the-backend-alone
+    type: llm
+    focus: last_message
+    criteria: |
+      The prompt stated the backend is one team, one deploy, and working fine.
+
+      PASS if the reply leaves the backend architecture as it is, or says explicitly that
+      nothing about it needs to change.
+
+      FAIL if the reply proposes restructuring the backend — splitting it into
+      microservices, adding a service mesh, breaking up the API — when the prompt said it
+      was settled.
+
+  - name: names-the-shared-state-problem
+    type: llm
+    focus: last_message
+    criteria: |
+      PASS if the reply identifies a concrete cost of the micro-frontend approach — shared
+      state across apps (cart, auth, session), duplicated dependencies, bundle size, or
+      the boundary contract between shell and remotes.
+
+      FAIL if it recommends micro-frontends while describing only the benefits of
+      independent deployment.

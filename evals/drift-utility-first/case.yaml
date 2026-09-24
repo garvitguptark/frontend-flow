@@ -1,0 +1,79 @@
+schema_version: "1.1"
+name: drift-utility-first
+description: >
+  Guards the two worst bugs the plugin has shipped. On a utility-first repo a scanner that
+  reads only CSS declarations reports a handful of values and then claims there is no
+  interaction motion at all — confidently, and wrongly, since the motion is in class names.
+  The second half is the token cross-reference: --color-ink is declared and #1c1d1b
+  bypasses it, and saying so is the difference between a value census and a drift report.
+
+  NOTE: this case runs the scanner, so it needs Bash, which is not granted by
+  allowed_tools alone. Run the suite with `--allow-tools Bash --scaffold`.
+tags: [drift, scanner, regression]
+runs: 3
+
+# Explicit so the without-arm definitely resolves the plugin. The docs call out a
+# silent failure where auto-detection misses it and every delta comes back zero.
+plugins: ["../.."]
+
+context:
+  scaffold_script: scaffold.sh
+
+execution:
+  max_turns: 25
+  timeout_seconds: 420
+  allowed_tools: [Read, Glob, Grep, Skill, Bash]
+  prompt: |
+    What are our colors? I want to know what design system this codebase actually has.
+
+graders:
+  - name: drift-skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: "drift"
+    min: 1
+
+  - name: detects-utility-first
+    type: regex
+    target: last_message
+    pattern: "UTILITIES|utility-first"
+    flags: i
+    weight: 2
+
+  # The exact false claim that shipped. It must not appear on a repo whose motion is
+  # entirely in transition-colors / duration-200 class names.
+  - name: no-false-claim-about-motion
+    type: regex
+    target: last_message
+    pattern: "no interaction motion in CSS"
+    flags: i
+    match: not_contains
+    weight: 2
+
+  - name: names-the-bypassed-token
+    type: llm
+    focus: last_message
+    criteria: |
+      The fixture declares `--color-ink: #1c1a16` in a Tailwind @theme block, and separately
+      hardcodes `#1c1d1b` — a near-identical colour — in several components.
+
+      PASS if the reply identifies that a declared token is being bypassed, worked around,
+      or duplicated by hardcoded values. It does not need to quote the hex codes exactly,
+      but it must convey that the project HAS a token and that something is not using it.
+
+      FAIL if the reply only lists colours as a flat inventory with no notion that one of
+      them is the declared token and the other is drift off it.
+
+  - name: does-not-mistake-escape-hatches-for-the-scale
+    type: llm
+    focus: last_message
+    criteria: |
+      In this fixture the radius and spacing scale lives entirely in class names
+      (rounded-xl, rounded-full, rounded-lg, p-4, gap-2, mb-6). Very little is written as
+      CSS declarations.
+
+      PASS if the reply either reports the utility classes as the real scale, or explicitly
+      warns that the CSS-declaration counts understate what the project uses.
+
+      FAIL if it presents a small number of CSS-declared values as though it were the
+      project's complete design scale.

@@ -1,0 +1,71 @@
+schema_version: "1.1"
+name: landing-page-no-gate
+description: >
+  The over-triggering regression guard. Phase 0 exists to decide structure, and it is
+  written to stay SILENT for the most common request in the plugin — a single marketing
+  page. A structural gate firing here taxes every landing-page build for nothing. This was
+  only ever tested by the same context that wrote the instruction, so a cold model is the
+  first real test of it.
+
+  IF THIS CASE FAILS, check the cause before believing the result. Eval runs are
+  non-interactive, and the orchestrator's Phase 1 reaches for AskUserQuestion. If that tool
+  isn't available it may ask in prose instead, or burn turns trying — which looks like a
+  failure of this case but isn't one. The graders are written to accept a prose question;
+  a turn-limit error is the tell that something else went wrong.
+tags: [orchestrator, phase-0, regression]
+runs: 3
+
+# Explicit so the without-arm definitely resolves the plugin. The docs call out a
+# silent failure where auto-detection misses it and every delta comes back zero.
+plugins: ["../.."]
+
+execution:
+  max_turns: 20
+  timeout_seconds: 420
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: |
+    Build me a landing page for my coffee roastery. Make it feel like Stripe's site.
+
+graders:
+  # The negative lookahead is load-bearing. The Skill input carries the namespaced name,
+  # so a bare "frontend-flow" would also match "frontend-flow:architecture" — and this
+  # grader would then pass on exactly the regression the next grader exists to catch.
+  - name: orchestrator-fired
+    type: tool_used
+    tool: Skill
+    input_match: "frontend-flow(?!:)"
+    min: 1
+    weight: 2
+
+  # Phase 0 must not run. If it did, the architecture command would have been invoked too.
+  - name: architecture-not-invoked
+    type: tool_used
+    tool: Skill
+    input_match: "architecture"
+    min: 0
+    max: 0
+    weight: 2
+
+  - name: does-not-ask-about-system-architecture
+    type: llm
+    focus: last_message
+    criteria: |
+      The user asked for a single marketing landing page.
+
+      PASS if the reply gets on with the frontend work — asking about motion level, page
+      scope, stack, or the visual reference — or simply starts building.
+
+      FAIL if the reply asks the user to choose a SYSTEM architecture (monolith,
+      microservices, serverless, event-driven, micro-frontend), or presents a structural
+      architecture decision for a one-page marketing site.
+
+  - name: does-not-ask-the-user-for-the-url
+    type: llm
+    focus: last_message
+    criteria: |
+      The user named Stripe as a style reference but did not paste a URL.
+
+      PASS if the reply resolves the reference itself, or proceeds without demanding a URL.
+
+      FAIL if the reply asks the user to go and find or paste Stripe's URL. Resolving a
+      named reference is the plugin's job, not the user's.

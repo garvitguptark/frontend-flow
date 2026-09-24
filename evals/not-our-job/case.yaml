@@ -1,0 +1,49 @@
+schema_version: "1.1"
+name: not-our-job
+description: >
+  Negative control. A suite made only of cases the plugin should handle cannot detect
+  over-triggering, and a plugin that fires on everything costs context on every unrelated
+  turn. This request is pure backend refactoring with no UI, no design question and no
+  undecided structure — the plugin should stay out of the way entirely.
+tags: [negative-control, over-triggering]
+runs: 3
+
+# Explicit so the without-arm definitely resolves the plugin. The docs call out a
+# silent failure where auto-detection misses it and every delta comes back zero.
+plugins: ["../.."]
+
+execution:
+  max_turns: 12
+  timeout_seconds: 300
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: |
+    Our Python service has a function that's grown to 400 lines and does three unrelated
+    things. Help me think about how to break it up into smaller functions.
+
+graders:
+  # Bare "frontend-flow" is deliberate here — unlike the other cases, it should match the
+  # orchestrator AND every namespaced command, because nothing in this plugin should fire.
+  - name: nothing-from-this-plugin-fires
+    type: tool_used
+    tool: Skill
+    input_match: "frontend-flow"
+    min: 0
+    max: 0
+    weight: 2
+    # Scored in both arms: the point is that loading the plugin must not change this
+    # outcome. Δ of zero is the CORRECT result for a negative control — don't delete this
+    # case for "proving nothing", which is the rule for the positive cases only.
+    arm: both
+
+  - name: answers-the-actual-question
+    type: llm
+    focus: last_message
+    criteria: |
+      The user asked how to break a long Python function into smaller ones.
+
+      PASS if the reply engages with that — extracting functions, separating the three
+      concerns, naming, testing seams, or asking to see the code.
+
+      FAIL if the reply instead discusses system architecture (monolith, microservices,
+      serverless), design tokens, colours, or frontend concerns. Those would mean an
+      unrelated plugin captured the request.

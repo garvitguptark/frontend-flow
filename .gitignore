@@ -10,6 +10,10 @@
 # project names with generic descriptions ("a private Tailwind v4 Next.js app").
 TESTING.md
 
+# Eval run output. Each `claude plugin eval` run writes a timestamped directory with
+# aggregate-result.json and report.html. The cases themselves are source and do ship.
+evals/results/
+
 # Node
 node_modules/
 npm-debug.log*

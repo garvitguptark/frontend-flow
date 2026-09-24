@@ -1,0 +1,63 @@
+schema_version: "1.1"
+name: earns-microservices
+description: >
+  The guard against over-correction. A table that always says "monolith" is not judgement,
+  it is a constant. Here every clause of the microservices trigger is stated outright —
+  three teams, a hard independent-deploy requirement, divergent scaling — so the expensive
+  answer is the correct one. Expect a small delta: a model without the plugin probably gets
+  this right too, which is fine. This case exists to fail loudly if the plugin ever becomes
+  reflexively frugal.
+tags: [architecture, earned]
+runs: 3
+
+# Explicit so the without-arm definitely resolves the plugin. The docs call out a
+# silent failure where auto-detection misses it and every delta comes back zero.
+plugins: ["../.."]
+
+execution:
+  max_turns: 20
+  timeout_seconds: 420
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: |
+    We have three teams: payments, catalog, and search. Payments has to ship on its own
+    release train because of PCI audit. Search takes roughly 50x the read traffic of the
+    rest of the system and needs to scale on its own. There's also a legacy Oracle
+    inventory system we're not allowed to modify — we have to read stock levels out of it.
+    How should we structure this?
+
+graders:
+  - name: architecture-skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: "architecture"
+    min: 1
+
+  - name: lands-on-microservices
+    type: regex
+    target: last_message
+    pattern: "Architecture:[^\\n]*microservice"
+    flags: i
+    weight: 2
+
+  - name: handles-the-legacy-system-as-an-adapter
+    type: llm
+    focus: last_message
+    criteria: |
+      The prompt named a legacy Oracle system that cannot be modified.
+
+      PASS if the reply treats that system as ONE integration point — an adapter, wrapper,
+      anti-corruption layer, or equivalent — sitting alongside the main architecture.
+
+      FAIL if the reply makes the legacy system the shape of the whole system, for example
+      by answering "SOA" or "service-oriented architecture" as the primary recommendation,
+      or if it ignores the legacy system entirely.
+
+  - name: names-the-operational-cost
+    type: llm
+    focus: last_message
+    criteria: |
+      PASS if the reply states a concrete operational cost of microservices — for example
+      service discovery, distributed tracing, network failure as a normal case, multiple
+      deploy pipelines, or more on-call surface.
+
+      FAIL if it recommends microservices while describing only benefits.

@@ -1,0 +1,68 @@
+schema_version: "1.1"
+name: serverless-trap
+description: >
+  The subtlest case in the suite, and the one that found defect 6 during development. This
+  workload matches the serverless trigger word for word — webhook-driven, idle almost all
+  day — but each unit of work takes minutes, and execution limits are exactly what
+  serverless costs you. A trigger firing is not enough; the trade-off has to survive too.
+tags: [architecture, refusal, subtle]
+runs: 3
+
+# Explicit so the without-arm definitely resolves the plugin. The docs call out a
+# silent failure where auto-detection misses it and every delta comes back zero.
+plugins: ["../.."]
+
+execution:
+  max_turns: 20
+  timeout_seconds: 420
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: |
+    We're building a service that boots an isolated copy of a customer's whole backend for
+    every pull request — migrated database, queues, workers, its own hostname — and tears
+    it down when the PR merges. GitHub webhooks kick it off. Two of us building it. A
+    preview environment sits idle most of its life, but provisioning one is heavy and takes
+    a few minutes. What should the architecture be?
+
+graders:
+  - name: architecture-skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: "architecture"
+    min: 1
+
+  - name: does-not-recommend-serverless
+    type: regex
+    target: last_message
+    pattern: "Architecture:[^\\n]*serverless"
+    flags: i
+    match: not_contains
+    weight: 2
+
+  - name: rejects-serverless-for-the-right-reason
+    type: llm
+    focus: last_message
+    criteria: |
+      This workload superficially fits serverless: webhook-triggered, idle most of the day.
+      The disqualifier is that provisioning takes MINUTES, which runs into function
+      execution limits.
+
+      PASS if the reply either (a) explicitly rejects or warns against serverless and cites
+      long-running work, execution limits, timeouts, or duration as the reason, or (b)
+      recommends a long-running worker, job queue, or always-on process for the
+      provisioning step.
+
+      FAIL if the reply recommends serverless functions as the primary shape, or if it
+      rejects serverless without connecting the reason to the multi-minute duration.
+
+  - name: handles-async-without-over-building
+    type: llm
+    focus: last_message
+    criteria: |
+      The team is two people.
+
+      PASS if any asynchronous machinery the reply proposes is proportionate — a job queue,
+      a worker process, or a lightweight broker.
+
+      FAIL if it proposes a heavyweight event-streaming platform (Kafka, Pulsar, a full
+      event mesh) for a two-person team without saying why that scale is needed, or if it
+      recommends microservices.
