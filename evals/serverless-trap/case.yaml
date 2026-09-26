@@ -5,7 +5,7 @@ description: >
   workload matches the serverless trigger word for word — webhook-driven, idle almost all
   day — but each unit of work takes minutes, and execution limits are exactly what
   serverless costs you. A trigger firing is not enough; the trade-off has to survive too.
-tags: [architecture, refusal, subtle]
+tags: [architecture, refusal, subtle, no-shell]
 runs: 3
 
 # Explicit so the without-arm definitely resolves the plugin. The docs call out a

@@ -7,9 +7,21 @@ description: >
   The second half is the token cross-reference: --color-ink is declared and #1c1d1b
   bypasses it, and saying so is the difference between a value census and a drift report.
 
-  NOTE: this case runs the scanner, so it needs Bash, which is not granted by
-  allowed_tools alone. Run the suite with `--allow-tools Bash --scaffold`.
-tags: [drift, scanner, regression]
+  CANNOT RUN ON WINDOWS WITHOUT A SANDBOX. This is the only case that needs a shell: it
+  runs `node scripts/drift.mjs`, and its fixture is a bash scaffold. Granting a shell with
+  `--allow-tools Bash` requires a sandbox backend, and where none is active the runner
+  refuses the run rather than going unconfined — which errors EVERY case in the suite, not
+  just this one. A bash `scaffold_script` also needs a reachable /bin/bash, which Windows
+  does not have by default.
+
+  So exclude it on Windows and run the other six clean:
+
+      claude plugin eval . --trust-plugin --tag no-shell
+
+  On Linux, macOS, or CI with a sandbox backend, run the full suite:
+
+      claude plugin eval . --trust-plugin --scaffold --allow-tools Bash
+tags: [drift, scanner, regression, needs-shell]
 runs: 3
 
 # Explicit so the without-arm definitely resolves the plugin. The docs call out a

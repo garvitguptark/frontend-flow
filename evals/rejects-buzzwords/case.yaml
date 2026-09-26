@@ -6,7 +6,7 @@ description: >
   live driver tracking, and the team size is one. A model without the plugin tends to match
   the ambition and answer microservices; the table refuses. If this case does not show a
   clear delta, the plugin is not doing the thing it exists to do.
-tags: [architecture, refusal, headline]
+tags: [architecture, refusal, headline, no-shell]
 runs: 3
 
 # Explicit so the without-arm definitely resolves the plugin. The docs call out a
@@ -50,6 +50,24 @@ graders:
     flags: i
     match: not_contains
     weight: 2
+
+  # Format-independent twin of lands-on-cheap-shape. That grader requires the literal
+  # "Architecture:" line, so a baseline answer fails it partly for not using the plugin's
+  # output format rather than for being wrong. This one judges the recommendation itself,
+  # so the two together show how much of the delta is judgement and how much is format.
+  - name: recommends-the-cheap-shape-on-the-merits
+    type: llm
+    focus: last_message
+    criteria: |
+      Ignore formatting entirely. Judge only the substance of the recommendation.
+
+      PASS if the reply's primary recommendation is a single deployable application — a
+      monolith, a modular monolith, or a layered/n-tier app — optionally with a queue,
+      broker or channel added for the live-tracking feature.
+
+      FAIL if the primary recommendation is microservices, a service-per-domain split, or
+      any multi-service architecture. Also FAIL if it declines to recommend anything and
+      only lists options.
 
   - name: names-its-cost-and-what-would-flip-it
     type: llm

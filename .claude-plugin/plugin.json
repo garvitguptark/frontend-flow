@@ -1,7 +1,7 @@
 {
   "name": "frontend-flow",
   "displayName": "Frontend Flow",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Token-efficient, multi-phase frontend design workflow. Picks the system architecture that fits your requirement, resolves a reference site by name or URL, extracts real design tokens instead of guessing, reads the design system already present in your codebase, asks a couple of quick preference questions, then builds — keeping the noisy extraction inside subagents that exit, so the main context carries the judgment and not the markup.",
   "keywords": [
     "frontend",
@@ -15,5 +15,11 @@
     "architecture",
     "system design"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "author": {
+    "name": "garvitguptark",
+    "url": "https://github.com/garvitguptark"
+  },
+  "homepage": "https://github.com/garvitguptark/frontend-flow",
+  "repository": "https://github.com/garvitguptark/frontend-flow"
 }

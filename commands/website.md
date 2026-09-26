@@ -1,6 +1,6 @@
 ---
 name: website
-description: Look up a site by name or URL and return its design tokens (colors, type, spacing, motion) without doing a full build. Use for "what does X's site look like", "grab the colors/fonts from X", or as a quick reference check before deciding what to build.
+description: Look up a site by name or URL and return its design tokens (colors, type, spacing, motion) without building anything. Use for "what does X's site look like" or "grab the colors/fonts from X". Not for build requests — "build me a site like X" belongs to the main frontend-flow skill, which runs this same scan itself.
 ---
 
 Extract the reference's design tokens with the scanner:

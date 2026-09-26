@@ -5,7 +5,7 @@ description: >
   over-triggering, and a plugin that fires on everything costs context on every unrelated
   turn. This request is pure backend refactoring with no UI, no design question and no
   undecided structure — the plugin should stay out of the way entirely.
-tags: [negative-control, over-triggering]
+tags: [negative-control, over-triggering, no-shell]
 runs: 3
 
 # Explicit so the without-arm definitely resolves the plugin. The docs call out a

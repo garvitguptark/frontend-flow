@@ -12,7 +12,12 @@ description: >
   isn't available it may ask in prose instead, or burn turns trying — which looks like a
   failure of this case but isn't one. The graders are written to accept a prose question;
   a turn-limit error is the tell that something else went wrong.
-tags: [orchestrator, phase-0, regression]
+
+  If orchestrator-fired reports Skill 0x and the transcript shows frontend-flow:website
+  instead, the orchestrator was missing from the skill listing entirely. That happened
+  once: SKILL.md's description held an unquoted ": " and ran past 1024 characters, the
+  skill was dropped without a warning, and `claude plugin validate` passed anyway.
+tags: [orchestrator, phase-0, regression, no-shell]
 runs: 3
 
 # Explicit so the without-arm definitely resolves the plugin. The docs call out a
@@ -30,6 +35,8 @@ graders:
   # The negative lookahead is load-bearing. The Skill input carries the namespaced name,
   # so a bare "frontend-flow" would also match "frontend-flow:architecture" — and this
   # grader would then pass on exactly the regression the next grader exists to catch.
+  # The orchestrator itself arrives as "frontend-flow:frontend-flow" and still matches,
+  # on its second half.
   - name: orchestrator-fired
     type: tool_used
     tool: Skill
@@ -63,9 +70,12 @@ graders:
     type: llm
     focus: last_message
     criteria: |
-      The user named Stripe as a style reference but did not paste a URL.
+      The user named Stripe as a style reference but did not paste a URL. This grader
+      checks for exactly one failure.
 
-      PASS if the reply resolves the reference itself, or proceeds without demanding a URL.
+      FAIL only if the reply asks the user to find, look up or paste Stripe's URL.
+      Resolving a named reference is the plugin's job, not the user's.
 
-      FAIL if the reply asks the user to go and find or paste Stripe's URL. Resolving a
-      named reference is the plugin's job, not the user's.
+      PASS otherwise. That includes a reply that asks other questions first (motion,
+      stack, content) or says it will look Stripe's site up itself once they answer.
+      Asking the user to run a command or grant a permission is not asking for the URL.

@@ -7,7 +7,7 @@ description: >
   answer is the correct one. Expect a small delta: a model without the plugin probably gets
   this right too, which is fine. This case exists to fail loudly if the plugin ever becomes
   reflexively frugal.
-tags: [architecture, earned]
+tags: [architecture, earned, no-shell]
 runs: 3
 
 # Explicit so the without-arm definitely resolves the plugin. The docs call out a

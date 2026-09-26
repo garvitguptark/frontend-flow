@@ -4,7 +4,7 @@ description: >
   All the deploy pressure in this prompt is in the UI. The backend is stated as settled and
   working, so nothing licenses touching it. The failure to catch is collapsing "two teams
   shipping separately" into microservices and restructuring a backend nobody asked about.
-tags: [architecture, scope]
+tags: [architecture, scope, no-shell]
 runs: 3
 
 # Explicit so the without-arm definitely resolves the plugin. The docs call out a
