@@ -1,10 +1,38 @@
 # Frontend Flow
 
-A Claude Code plugin that decides the shape of what you're building, then builds it against a real design reference instead of a guessed one.
+**Ask Claude for a site "like Stripe" and it works from memory. Frontend Flow opens Stripe's real stylesheets and builds from what's actually there.**
 
-Two questions, answered in order. **What shape is this?** — `/architecture` maps a requirement onto one of seven system architectures, walking them cheapest-to-operate first, and tells you what the answer costs. **What should it look like?** — it resolves a site you name ("make it feel like Stripe") into concrete design tokens, reads the design system already in your codebase, and keeps the noisy extraction work off the expensive model.
+A Claude Code plugin for two calls AI makes confidently and rarely checks: what your site should look like, and what shape your system should be.
 
-Structure comes first because it changes what the design step is building. A micro-frontend shell and a single landing page are not the same job.
+## Why install this instead of just asking Claude
+
+Same prompt, same model, same tools: *"Build me a landing page for my coffee roastery. Make it feel like Stripe's site."*
+
+| Plain Claude | With Frontend Flow |
+|:---:|:---:|
+| <img src="docs/stripe-plain-claude.png" width="400" alt="Landing page built by plain Claude"> | <img src="docs/stripe-frontend-flow.png" width="400" alt="Landing page built with Frontend Flow"> |
+| Had web access and never opened stripe.com. Every colour came from memory. | Fetched Stripe's live stylesheets, then built from the measured values. |
+| **25–61%** of its colours exist in Stripe's real CSS | **78–88%** |
+| Invented 9–18 colours per page | Invented 2–7 |
+
+<sub>Three runs per side, Claude Opus 5.5. A colour counts as Stripe's if it is within ΔE 5 of one in Stripe's CSS; pure white and black excluded. Re-score any build with <code>evals/fidelity/score.mjs</code>.</sub>
+
+Both pages look right, because Stripe is famous and Claude half-remembers it. That is the *easy* case for plain Claude. The less known your reference, the less memory it has to fall back on, and the plugin's method stays the same.
+
+**What you get that plain Claude doesn't do on its own:**
+
+- **Measured, not remembered.** Name a site and the plugin finds it, reads its real CSS with a local script, and hands the build step a short token report. Stripe's homepage is 684 KB of HTML and 477 KB of CSS, and none of it enters your conversation.
+- **Your architecture's price tag, in writing.** Plain Claude usually picks a sensible architecture: in our evals it recommended a modular monolith for a solo developer three times out of three. What it never did (0 of 3) was say what that choice costs and what would change it. `/architecture` answers in four lines, *Architecture, Because, Trade-off, Runner-up*, every time.
+- **An audit you can't do by eye.** `/drift` reads every file in your project with a local script, using zero model tokens. It clusters every colour and finds tokens you declared and then bypassed, near-duplicate greys and contrast failures. It also handles Tailwind-style codebases where the design system lives in class names. Pointed at Stripe's own CSS, it finds 324 colours in 117 clusters, plus 21 declared tokens bypassed by hand-typed values.
+- **It stays out of the way.** Asked to help refactor a Python function, it fired 0 times. On a landing page it skips the architecture step entirely.
+
+**When plain Claude is enough** (you'd find out anyway):
+
+- **A quick page with no reference.** Plain Claude is faster, and the plugin costs about 1.6× as much per build.
+- **Adding a page to an app you've told Claude to match.** In our test, both versions introduced zero colours the app didn't already use. `/drift` earns its keep *before* that, when you need to know what the system is.
+- **No terminal available.** The flow needs Node 18+ and a shell. Without them, it stops and asks instead of guessing.
+
+**Check our work.** `claude plugin eval . --trust-plugin --tag no-shell` runs every eval case with and without the plugin and reports the difference. `evals/fidelity/score.mjs` re-scores any build against its reference.
 
 ## Install
 
@@ -92,7 +120,7 @@ run.**
 
 ## Why `/architecture` refuses
 
-Ask any model "what architecture for my app, it needs to be scalable and enterprise-grade" and you get microservices, a broker and a service mesh — because the model matches the ambition in the prompt. This one walks a table ordered cheapest-to-operate first and treats ambition words as non-signals. Real runs:
+Plain Claude often picks a sensible architecture on its own: in our evals it recommended a modular monolith for a solo developer three times out of three. What it skipped every time was the part you need to live with the decision, namely what the choice costs and what would change it. This one walks a table ordered cheapest-to-operate first, treats ambition words like "scalable" as non-signals, and has to name its trade-off and runner-up before it answers. Real runs:
 
 | Requirement | Answer |
 |---|---|
