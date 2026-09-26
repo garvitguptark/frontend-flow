@@ -1,23 +1,30 @@
 # Frontend Flow
 
-**Ask Claude for a site "like Stripe" and it works from memory. Frontend Flow opens Stripe's real stylesheets and builds from what's actually there.**
+**Ask Claude for a site "like pitch.com" and it guesses from memory. Frontend Flow reads pitch.com's real stylesheets and builds from what's actually there.**
 
 A Claude Code plugin for two calls AI makes confidently and rarely checks: what your site should look like, and what shape your system should be.
 
 ## Why install this instead of just asking Claude
 
-Same prompt, same model, same tools: *"Build me a landing page for my coffee roastery. Make it feel like Stripe's site."*
+Same prompt, same model, same tools: *"Build me a landing page for my coffee roastery. Make it feel like pitch.com."*
 
 | Plain Claude | With Frontend Flow |
 |:---:|:---:|
-| <img src="docs/stripe-plain-claude.png" width="400" alt="Landing page built by plain Claude"> | <img src="docs/stripe-frontend-flow.png" width="400" alt="Landing page built with Frontend Flow"> |
-| Had web access and never opened stripe.com. Every colour came from memory. | Fetched Stripe's live stylesheets, then built from the measured values. |
-| **25–61%** of its colours exist in Stripe's real CSS | **78–88%** |
-| Invented 9–18 colours per page | Invented 2–7 |
+| <img src="docs/pitch-plain-claude.png" width="400" alt="Coffee landing page built by plain Claude: cream background, purple-to-orange gradient headline"> | <img src="docs/pitch-frontend-flow.png" width="400" alt="Coffee landing page built with Frontend Flow: near-black purple background, purple and lime buttons"> |
+| Never looked at pitch.com despite having web access, and guessed its look. A tidy but generic startup page. | Read pitch.com's live CSS first, then built on its near-black purple, `#5318eb` purple and `#c4ee87` lime. |
 
-<sub>Three runs per side, Claude Opus 5.5. A colour counts as Stripe's if it is within ΔE 5 of one in Stripe's CSS; pure white and black excluded. Re-score any build with <code>evals/fidelity/score.mjs</code>.</sub>
+Pitch's real palette, as measured: `#0c021c` near-black purple · `#5318eb` purple · `#0099ff` blue · `#c6a5ff` lavender · `#c4ee87` lime.
 
-Both pages look right, because Stripe is famous and Claude half-remembers it. That is the *easy* case for plain Claude. The less known your reference, the less memory it has to fall back on, and the plugin's method stays the same.
+Three runs per side, on a site Claude barely remembers and on one it knows well:
+
+| Reference | Plain Claude | With Frontend Flow |
+|---|---|---|
+| **pitch.com** | **8–27%** of its colours are really Pitch's, with zero exact matches in any run | **69–82%**, with 8–10 exact matches per page |
+| **stripe.com** | 25–61% | 78–88% |
+
+<sub>Claude Opus 5.5. A colour counts if it is within ΔE 5 of one in the reference's real CSS; pure white and black are excluded. Re-score any build with <code>evals/fidelity/score.mjs</code>. Stripe side-by-side: <a href="docs/stripe-plain-claude.png">plain Claude</a> · <a href="docs/stripe-frontend-flow.png">with the plugin</a>.</sub>
+
+Across six plain-Claude runs with web access, it never once opened the reference site. It guesses, and the less famous the site, the worse the guess. Frontend Flow reads the site every time, so it stays around 70–90% whether Claude has heard of the site or not.
 
 **What you get that plain Claude doesn't do on its own:**
 
@@ -28,7 +35,7 @@ Both pages look right, because Stripe is famous and Claude half-remembers it. Th
 
 **When plain Claude is enough** (you'd find out anyway):
 
-- **A quick page with no reference.** Plain Claude is faster, and the plugin costs about 1.6× as much per build.
+- **A quick page with no reference.** Plain Claude is faster, and the plugin costs about 1.5× as much per build.
 - **Adding a page to an app you've told Claude to match.** In our test, both versions introduced zero colours the app didn't already use. `/drift` earns its keep *before* that, when you need to know what the system is.
 - **No terminal available.** The flow needs Node 18+ and a shell. Without them, it stops and asks instead of guessing.
 
